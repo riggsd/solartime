@@ -1,20 +1,43 @@
-This is 'astral' a Python module which calculates
+This is 'solartime', a Python module which calculates times for various positions of the sun:
+dawn, sunrise, solar noon, sunset, and dusk.
 
-    * Times for various positions of the sun: dawn, sunrise, solar noon,
-      sunset, dusk, solar elevation, solar azimuth and rahukaalam.
-    * The phase of the moon.
+'solartime' is a vastly-simplified fork of Simon Kennedy's 'astral' module, and is Free / Libre
+Open Source software under the Apache 2.0 license.
 
-For documentation see the http://pythonhosted.org/astral/
+Its only dependency is the `pytz` package.
 
-GoogleGeocoder
---------------
 
-`GoogleGeocoder` uses the mapping services provided by Google
+Example usage:
 
-Access to the `GoogleGeocoder` requires you to agree to be bound by
-Google Maps/Google Earth APIs Terms of Service found at
-https://developers.google.com/maps/terms which includes but is not limited to
-having a Google Account.
+    >>> from datetime import date
+    >>> from pytz import timezone
+    >>> from solartime import SolarTime
+    >>>
+    >>> today = date(2014, 4, 20)
+    >>> localtz = timezone('US/Eastern')
+    >>> lat, lon = 38.0, -79.0
+    >>>
+    >>> sun = SolarTime()
+    >>> schedule = sun.sun_utc(today, lat, lon)
+    >>> sunset = schedule['sunset'].astimezone(localtz)
+    >>> print sunset
+    2014-04-20 19:56:38-04:00
 
-More information on Google's maps service can be found at
-https://developers.google.com/maps/documentation/
+
+License
+=======
+
+Copyright 2015 David A. Riggs <driggs@myotisoft.com>
+Copyright 2009-2014 Simon Kennedy <sffjunkie+code@gmail.com>
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.

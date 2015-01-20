@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+# Copyright 2015, David Riggs, driggs@myotisoft.com
 # Copyright 2009-2014, Simon Kennedy, sffjunkie+code@gmail.com
 
 """The :mod:`solartime` module provides the means to calculate dawn, sunrise,
@@ -8,17 +9,12 @@ elevation, at a specific latitude/longitude.
 
 The module provides one main class, :class:`SolarTime`.
 
-:class:`Astral`
-    Has 2 main responsibilities
+:class:`SolarTime`
+    Has one main responsibility
 
     * Calculates the events in the UTC timezone.
-    * Provides access to location data
 
-:class:`Location`
-    Holds information about a location and provides functions to calculate
-    the event times for the location in the correct time zone.
-
-For example ::
+Example usage ::
 
     >>> from datetime import date
     >>> from pytz import timezone
@@ -34,15 +30,15 @@ For example ::
 
 """
 
-try:
-    import pytz
-except ImportError:
-    raise ImportError('The solartime module requires the pytz module to be available.')
-
 import datetime
 from time import time
 from math import cos, sin, tan, acos, asin, atan2, floor, ceil
 from math import radians, degrees, pow
+
+try:
+    import pytz
+except ImportError:
+    raise ImportError('The solartime module requires the pytz module to be available.')
 
 
 __all__ = ['SolarTime', 'SolarError']
