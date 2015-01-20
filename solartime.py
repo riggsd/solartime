@@ -2,12 +2,11 @@
 
 # Copyright 2009-2014, Simon Kennedy, sffjunkie+code@gmail.com
 
-"""The :mod:`astral` module provides the means to calculate dawn, sunrise,
-solar noon, sunset, dusk and rahukaalam times, plus solar azimuth and
-elevation, for specific locations or at a specific latitude/longitude. It can
-also calculate the moon phase for a specific date.
+"""The :mod:`solartime` module provides the means to calculate dawn, sunrise,
+solar noon, sunset, and dusk, plus solar azimuth and
+elevation, at a specific latitude/longitude.
 
-The module provides 2 main classes :class:`Astral` and :class:`Location`.
+The module provides one main class, :class:`SolarTime`.
 
 :class:`Astral`
     Has 2 main responsibilities
@@ -21,60 +20,42 @@ The module provides 2 main classes :class:`Astral` and :class:`Location`.
 
 For example ::
 
-    >>> from astral import *
-    >>> a = Astral()
-    >>> location = a['London']
-    >>> print('Information for %s' % location.name)
-    Information for London
-    >>> timezone = location.timezone
-    >>> print('Timezone: %s' % timezone)
-    Timezone: Europe/London
-    >>> print('Latitude: %.02f; Longitude: %.02f' % (location.latitude, location.longitude))
-    Latitude: 51.60; Longitude: 0.05
     >>> from datetime import date
-    >>> d = date(2009,4,22)
-    >>> sun = location.sun(local=True, date=d)
-    >>> print('Dawn:    %s' % str(sun['dawn']))
-    Dawn:    2009-04-22 05:12:56+01:00
+    >>> from pytz import timezone
+    >>> from solartime import SolarTime
+    >>> today = date(2014, 1, 19)
+    >>> localtz = timezone('US/Eastern')
+    >>> lat, lon = 38.0, -79.0
+    >>> sun = SolarTime()
+    >>> schedule = sun.sun_utc(today, lat, lon)
+    >>> sunset = schedule['sunset'].astimezone(localtz)
+    >>> print(sunset)
+    2014-01-19 17:24:43-05:00
 
 """
 
 try:
     import pytz
 except ImportError:
-    raise ImportError('The astral module requires the pytz module to be available.')
+    raise ImportError('The solartime module requires the pytz module to be available.')
 
 import datetime
 from time import time
 from math import cos, sin, tan, acos, asin, atan2, floor, ceil
 from math import radians, degrees, pow
 
-try:
-    from urllib import quote_plus
-except ImportError:
-    from urllib.parse import quote_plus
 
-try:
-    from urllib2 import urlopen, URLError
-except ImportError:
-    from urllib.request import urlopen, URLError
-
-try:
-    import simplejson as json
-except ImportError:
-    import json
-
-__all__ = ['Astral', 'AstralError']
+__all__ = ['SolarTime', 'SolarError']
 
 __version__ = "0.1"
 __author__ = "Simon Kennedy <code@sffjunkie.co.uk>, David Riggs <driggs@myotisoft.com>"
 
 
-class AstralError(Exception):
+class SolarError(Exception):
     pass
 
 
-class Astral(object):
+class SolarTime(object):
 
     def __init__(self):
         """Initialise the geocoder and set the default depression."""
@@ -161,7 +142,7 @@ class Astral(object):
         try:
             return self._calc_time(date, latitude, longitude, self._depression)
         except:
-            raise AstralError('Sun remains below the horizon on this day, at this location.')
+            raise SolarError('Sun remains below the horizon on this day, at this location.')
 
     def sunrise_utc(self, date, latitude, longitude):
         """Calculate sunrise time in the UTC timezone.
@@ -179,7 +160,7 @@ class Astral(object):
         try:
             return self._calc_time(date, latitude, longitude, 0.833)
         except:
-            raise AstralError('Sun remains below the horizon on this day, at this location.')
+            raise SolarError('Sun remains below the horizon on this day, at this location.')
 
     def solar_noon_utc(self, date, longitude):
         """Calculate solar noon time in the UTC timezone.
@@ -247,7 +228,7 @@ class Astral(object):
         try:
             return self._calc_time(date, latitude, longitude, -0.833)
         except:
-            raise AstralError('Sun remains below the horizon on this day, at this location.')
+            raise SolarError('Sun remains below the horizon on this day, at this location.')
 
     def dusk_utc(self, date, latitude, longitude):
         """Calculate dusk time in the UTC timezone.
@@ -265,7 +246,7 @@ class Astral(object):
         try:
             return self._calc_time(date, latitude, longitude, - self._depression)
         except:
-            raise AstralError('Sun remains below the horizon on this day, at this location.')
+            raise SolarError('Sun remains below the horizon on this day, at this location.')
 
     def solar_azimuth(self, dateandtime, latitude, longitude):
         """Calculate the azimuth of the sun in the UTC timezone.
@@ -303,12 +284,12 @@ class Astral(object):
         #    in minutes
 
         while trueSolarTime > 1440:
-            trueSolarTime = trueSolarTime - 1440
+            trueSolarTime -= 1440
 
         hourangle = trueSolarTime / 4.0 - 180.0
         #    Thanks to Louis Schwarzmayr for the next line:
         if hourangle < -180:
-            hourangle = hourangle + 360.0
+            hourangle += 360.0
 
         harad = radians(hourangle)
 
@@ -343,7 +324,7 @@ class Astral(object):
                 azimuth = 0
 
         if azimuth < 0.0:
-            azimuth = azimuth + 360.0
+            azimuth += 360.0
 
         return azimuth
 
@@ -403,7 +384,7 @@ class Astral(object):
 
         azDenom = (cos(radians(latitude)) * sin(radians(zenith)))
 
-        if (abs(azDenom) > 0.001):
+        if abs(azDenom) > 0.001:
             azRad = ((sin(radians(latitude)) * cos(radians(zenith))) - sin(radians(solarDec))) / azDenom
 
             if abs(azRad) > 1.0:
@@ -435,8 +416,8 @@ class Astral(object):
                 refractionCorrection = 58.1 / te - 0.07 / (te * te * te) + 0.000086 / (te * te * te * te * te)
             elif exoatmElevation > -0.575:
                 step1 = -12.79 + exoatmElevation * 0.711
-                step2 = 103.4 + exoatmElevation * (step1)
-                step3 = -518.2 + exoatmElevation * (step2)
+                step2 = 103.4 + exoatmElevation * step1
+                step3 = -518.2 + exoatmElevation * step2
                 refractionCorrection = 1735.0 + exoatmElevation * step3
             else:
                 refractionCorrection = -20.774 / te
