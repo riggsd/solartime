@@ -1,22 +1,13 @@
-# Copyright 2009-2014, Simon Kennedy, sffjunkie+code@gmail.com
+# Copyright 2015, David Riggs <driggs@myotisoft.com>
+# Copyright 2009-2014, Simon Kennedy <sffjunkie+code@gmail.com>
 
 import io
 import sys
 import os.path
 from setuptools import setup
-from setuptools.command.test import test as TestCommand
 
+import solartime
 
-class Tox(TestCommand):
-    def finalize_options(self):
-        TestCommand.finalize_options(self)
-        self.test_args = []
-        self.test_suite = True
-        
-    def run_tests(self):
-        import tox
-        errcode = tox.cmdline(self.test_args)
-        sys.exit(errcode)
 
 def read(*names, **kwargs):
     return io.open(
@@ -25,16 +16,15 @@ def read(*names, **kwargs):
     ).read()
 
         
-setup(name='astral',
-      version='0.7.4',
-      description='Calculations for the position of the sun and moon.',
+setup(name='solartime',
+      version=solartime.__version__,
+      description='Calculations for solar time such as dawn, sunrise, sunset, dusk.',
       long_description=read('README'),
-      author='Simon Kennedy',
-      author_email='sffjunkie+code@gmail.com',
-      url="https://launchpad.net/astral",
+      author='David Riggs',
+      author_email='driggs@myotisoft.com',
+      url='',
       license='Apache-2.0',
-      package_dir={'': 'src'},
-      py_modules=['astral'],
+      py_modules=['solartime'],
       install_requires=['pytz'],
       classifiers=[
         "Intended Audience :: Developers",
@@ -42,7 +32,4 @@ setup(name='astral',
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
       ],
-    
-      tests_require=['tox'],
-      cmdclass = {'test': Tox},
 )

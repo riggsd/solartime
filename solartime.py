@@ -34,7 +34,7 @@ except ImportError:
 
 __all__ = ['SolarTime', 'SolarError']
 
-__version__ = '0.1'
+__version__ = '0.1b0'
 __license__ = 'Apache 2.0'
 __author__  = 'Simon Kennedy <code@sffjunkie.co.uk>, David Riggs <driggs@myotisoft.com>'
 
