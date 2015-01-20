@@ -1,18 +1,11 @@
-# -*- coding: utf-8 -*-
-
-# Copyright 2015, David Riggs, driggs@myotisoft.com
-# Copyright 2009-2014, Simon Kennedy, sffjunkie+code@gmail.com
-
-"""The :mod:`solartime` module provides the means to calculate dawn, sunrise,
-solar noon, sunset, and dusk, plus solar azimuth and
-elevation, at a specific latitude/longitude.
+"""
+The :mod:`solartime` module provides the means to calculate dawn, sunrise, solar noon, sunset,
+and dusk, plus solar azimuth and elevation, at a specific latitude/longitude.
 
 The module provides one main class, :class:`SolarTime`.
 
 :class:`SolarTime`
-    Has one main responsibility
-
-    * Calculates the events in the UTC timezone.
+    * Calculates events in the UTC timezone.
 
 Example usage ::
 
@@ -31,9 +24,7 @@ Example usage ::
 """
 
 import datetime
-from time import time
-from math import cos, sin, tan, acos, asin, atan2, floor, ceil
-from math import radians, degrees, pow
+from math import cos, sin, tan, acos, asin, atan2, floor, ceil, radians, degrees
 
 try:
     import pytz
@@ -43,8 +34,9 @@ except ImportError:
 
 __all__ = ['SolarTime', 'SolarError']
 
-__version__ = "0.1"
-__author__ = "Simon Kennedy <code@sffjunkie.co.uk>, David Riggs <driggs@myotisoft.com>"
+__version__ = '0.1'
+__license__ = 'Apache 2.0'
+__author__  = 'Simon Kennedy <code@sffjunkie.co.uk>, David Riggs <driggs@myotisoft.com>'
 
 
 class SolarError(Exception):
@@ -53,13 +45,19 @@ class SolarError(Exception):
 
 class SolarTime(object):
 
-    def __init__(self):
-        """Initialise the geocoder and set the default depression."""
+    def __init__(self, solar_depression=6):
+        """Create a SolarTime calculator.
 
-        self._depression = 6  # Set default depression in degrees
+        :param solar_depression:  Number of degrees the sun must be below the horizon for dawn/dusk calculation
+        :type number or str:  Either number of degrees, or one of 'civil', 'nautical', 'astronomical'
+        """
 
-    def solar_depression():
-        doc = """The number of degrees the sun must be below the horizon for the
+        self._depression = 6
+        self.solar_depression = solar_depression  # Set default depression in degrees
+
+    @property
+    def solar_depression(self):
+        """The number of degrees the sun must be below the horizon for the
         dawn/dusk calc.
 
         Can either be set as a number of degrees below the horizon or as
@@ -73,25 +71,20 @@ class SolarTime(object):
         astronomical    18.0
         ============= =======
         """
+        return self._depression
 
-        def fget(self):
-            return self._depression
-
-        def fset(self, depression):
-            if isinstance(depression, str):
-                try:
-                    self._depression = {
-                        'civil': 6,
-                        'nautical': 12,
-                        'astronomical': 18}[depression]
-                except:
-                    raise KeyError("solar_depression must be either a number or one of 'civil', 'nautical' or 'astronomical'")
-            else:
-                self._depression = float(depression)
-
-        return locals()
-
-    solar_depression = property(**solar_depression())
+    @solar_depression.setter
+    def solar_depression(self, depression):
+        if isinstance(depression, basestring):
+            try:
+                self._depression = {
+                    'civil': 6,
+                    'nautical': 12,
+                    'astronomical': 18}[depression]
+            except:
+                raise KeyError("solar_depression must be either a number or one of 'civil', 'nautical' or 'astronomical'")
+        else:
+            self._depression = float(depression)
 
     def sun_utc(self, date, latitude, longitude):
         """Calculate all the info for the sun at once.
@@ -104,22 +97,15 @@ class SolarTime(object):
         :type longitude:   float
 
         :rtype:
-            Dictionary with keys ``dawn``, ``sunrise``, ``noon``,
-            ``sunset`` and ``dusk``
+            Dictionary with keys ``dawn``, ``sunrise``, ``noon``, ``sunset`` and ``dusk``
         """
 
-        dawn    = self.dawn_utc(date, latitude, longitude)
-        sunrise = self.sunrise_utc(date, latitude, longitude)
-        noon    = self.solar_noon_utc(date, longitude)
-        sunset  = self.sunset_utc(date, latitude, longitude)
-        dusk    = self.dusk_utc(date, latitude, longitude)
-
         return {
-            'dawn': dawn,
-            'sunrise': sunrise,
-            'noon': noon,
-            'sunset': sunset,
-            'dusk': dusk
+            'dawn':    self.dawn_utc(date, latitude, longitude),
+            'sunrise': self.sunrise_utc(date, latitude, longitude),
+            'noon':    self.solar_noon_utc(date, longitude),
+            'sunset':  self.sunset_utc(date, latitude, longitude),
+            'dusk':    self.dusk_utc(date, latitude, longitude)
         }
 
     def dawn_utc(self, date, latitude, longitude):
@@ -178,7 +164,7 @@ class SolarTime(object):
         eqtime = self._eq_of_time(newt)
         timeUTC = 720.0 + (-longitude * 4.0) - eqtime
 
-        timeUTC = timeUTC / 60.0
+        timeUTC /= 60.0
         hour = int(timeUTC)
         minute = int((timeUTC - hour) * 60)
         second = int((((timeUTC - hour) * 60) - minute) * 60)
@@ -499,7 +485,6 @@ class SolarTime(object):
         sin2m = sin(2.0 * radians(m))
 
         Etime = y * sin2l0 - 2.0 * e * sinm + 4.0 * e * y * sinm * cos2l0 - 0.5 * y * y * sin4l0 - 1.25 * e * e * sin2m
-
         return degrees(Etime) * 4.0
 
     def _sun_eq_of_center(self, juliancentury):
@@ -511,13 +496,11 @@ class SolarTime(object):
         sin3m = sin(mrad + mrad + mrad)
 
         c = sinm * (1.914602 - juliancentury * (0.004817 + 0.000014 * juliancentury)) + sin2m * (0.019993 - 0.000101 * juliancentury) + sin3m * 0.000289
-
         return c
 
     def _sun_true_long(self, juliancentury):
         l0 = self._geom_mean_long_sun(juliancentury)
         c = self._sun_eq_of_center(juliancentury)
-
         return l0 + c
 
     def _sun_apparent_long(self, juliancentury):
@@ -551,7 +534,6 @@ class SolarTime(object):
     def _sun_true_anomoly(self, juliancentury):
         m = self._geom_mean_anomaly_sun(juliancentury)
         c = self._sun_eq_of_center(juliancentury)
-
         return m + c
 
     def _hour_angle(self, latitude, solar_dec, solar_depression):
@@ -559,7 +541,6 @@ class SolarTime(object):
         sdRad = radians(solar_dec)
 
         HA = (acos(cos(radians(90 + solar_depression)) / (cos(latRad) * cos(sdRad)) - tan(latRad) * tan(sdRad)))
-
         return HA
 
     def _calc_time(self, date, latitude, longitude, depression):
@@ -621,6 +602,4 @@ class SolarTime(object):
             hour += 24
             date -= datetime.timedelta(days=1)
 
-        dt = datetime.datetime(date.year, date.month, date.day, hour, minute, second, tzinfo=pytz.utc)
-
-        return dt
+        return datetime.datetime(date.year, date.month, date.day, hour, minute, second, tzinfo=pytz.utc)

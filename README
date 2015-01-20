@@ -4,7 +4,7 @@ dawn, sunrise, solar noon, sunset, and dusk.
 'solartime' is a vastly-simplified fork of Simon Kennedy's 'astral' module, and is Free / Libre
 Open Source software under the Apache 2.0 license.
 
-Its only dependency is the `pytz` package.
+Its only dependency is the `pytz` package, and Python 2.6, 2.7, 3.3+.
 
 
 Example usage:
