@@ -1,6 +1,6 @@
 """
 The :mod:`solartime` module provides the means to calculate dawn, sunrise, solar noon, sunset,
-and dusk, plus solar azimuth and elevation, at a specific latitude/longitude.
+and dusk, at a specific latitude/longitude.
 
 The module provides one main class, :class:`SolarTime`.
 
@@ -24,7 +24,7 @@ Example usage ::
 """
 
 import datetime
-from math import cos, sin, tan, acos, asin, atan2, floor, ceil, radians, degrees
+from math import cos, sin, tan, acos, asin, floor, radians, degrees
 
 try:
     import pytz
@@ -190,9 +190,7 @@ class SolarTime(object):
             hour += 24
             date -= datetime.timedelta(days=1)
 
-        noon = datetime.datetime(date.year, date.month, date.day, hour, minute, second, tzinfo=pytz.utc)
-
-        return noon
+        return datetime.datetime(date.year, date.month, date.day, hour, minute, second, tzinfo=pytz.utc)
 
     def sunset_utc(self, date, latitude, longitude):
         """Calculate sunset time in the UTC timezone.
@@ -230,196 +228,6 @@ class SolarTime(object):
         except:
             raise SolarError('Sun remains below the horizon on this day, at this location.')
 
-    def solar_azimuth(self, dateandtime, latitude, longitude):
-        """Calculate the azimuth of the sun in the UTC timezone.
-
-        :param dateandtime:       Date/time to calculate for.
-        :type dateandtime:        datetime.datetime
-        :param latitude:   Latitude - Northern latitudes should be positive
-        :type latitude:    float
-        :param longitude:  Longitude - Eastern longitudes should be positive
-        :type longitude:   float
-
-        :rtype: Azimuth in degrees
-        """
-
-        if latitude > 89.8:
-            latitude = 89.8
-
-        if latitude < -89.8:
-            latitude = -89.8
-
-        zone = -dateandtime.utcoffset().seconds / 3600.0
-        utc_datetime = dateandtime.astimezone(pytz.utc)
-        timenow = utc_datetime.hour + (utc_datetime.minute / 60.0) + (utc_datetime.second / 3600)
-
-        JD = self._julianday(dateandtime)
-        t = self._jday_to_jcentury(JD + timenow / 24.0)
-        theta = self._sun_declination(t)
-        Etime = self._eq_of_time(t)
-
-        eqtime = Etime
-        solarDec = theta   # in degrees
-
-        solarTimeFix = eqtime - (4.0 * -longitude) + (60 * zone)
-        trueSolarTime = dateandtime.hour * 60.0 + dateandtime.minute + dateandtime.second / 60.0 + solarTimeFix
-        #    in minutes
-
-        while trueSolarTime > 1440:
-            trueSolarTime -= 1440
-
-        hourangle = trueSolarTime / 4.0 - 180.0
-        #    Thanks to Louis Schwarzmayr for the next line:
-        if hourangle < -180:
-            hourangle += 360.0
-
-        harad = radians(hourangle)
-
-        csz = sin(radians(latitude)) * sin(radians(solarDec)) + cos(radians(latitude)) * cos(radians(solarDec)) * cos(harad)
-
-        if csz > 1.0:
-            csz = 1.0
-        elif csz < -1.0:
-            csz = -1.0
-
-        zenith = degrees(acos(csz))
-
-        azDenom = (cos(radians(latitude)) * sin(radians(zenith)))
-
-        if abs(azDenom) > 0.001:
-            azRad = ((sin(radians(latitude)) * cos(radians(zenith))) - sin(radians(solarDec))) / azDenom
-
-            if abs(azRad) > 1.0:
-                if azRad < 0:
-                    azRad = -1.0
-                else:
-                    azRad = 1.0
-
-            azimuth = 180.0 - degrees(acos(azRad))
-
-            if hourangle > 0.0:
-                azimuth = -azimuth
-        else:
-            if latitude > 0.0:
-                azimuth = 180.0
-            else:
-                azimuth = 0
-
-        if azimuth < 0.0:
-            azimuth += 360.0
-
-        return azimuth
-
-    def solar_elevation(self, dateandtime, latitude, longitude):
-        """Calculate the elevation of the sun.
-
-        :param dateandtime:       Date/time to calculate for.
-        :type dateandtime:        datetime.datetime
-        :param latitude:   Latitude - Northern latitudes should be positive
-        :type latitude:    float
-        :param longitude:  Longitude - Eastern longitudes should be positive
-        :type longitude:   float
-
-        :rtype: Elevation in degrees
-        """
-
-        if latitude > 89.8:
-            latitude = 89.8
-
-        if latitude < -89.8:
-            latitude = -89.8
-
-        zone = -dateandtime.utcoffset().seconds / 3600.0
-        utc_datetime = dateandtime.astimezone(pytz.utc)
-        timenow = utc_datetime.hour + (utc_datetime.minute / 60.0) + (utc_datetime.second / 3600)
-
-        JD = self._julianday(dateandtime)
-        t = self._jday_to_jcentury(JD + timenow / 24.0)
-        theta = self._sun_declination(t)
-        Etime = self._eq_of_time(t)
-
-        eqtime = Etime
-        solarDec = theta   # in degrees
-
-        solarTimeFix = eqtime - (4.0 * -longitude) + (60 * zone)
-        trueSolarTime = dateandtime.hour * 60.0 + dateandtime.minute + dateandtime.second / 60.0 + solarTimeFix
-        #    in minutes
-
-        while trueSolarTime > 1440:
-            trueSolarTime -= 1440
-
-        hourangle = trueSolarTime / 4.0 - 180.0
-        #    Thanks to Louis Schwarzmayr for the next line:
-        if hourangle < -180:
-            hourangle += 360.0
-
-        harad = radians(hourangle)
-
-        csz = sin(radians(latitude)) * sin(radians(solarDec)) + cos(radians(latitude)) * cos(radians(solarDec)) * cos(harad)
-
-        if csz > 1.0:
-            csz = 1.0
-        elif csz < -1.0:
-            csz = -1.0
-
-        zenith = degrees(acos(csz))
-
-        azDenom = (cos(radians(latitude)) * sin(radians(zenith)))
-
-        if abs(azDenom) > 0.001:
-            azRad = ((sin(radians(latitude)) * cos(radians(zenith))) - sin(radians(solarDec))) / azDenom
-
-            if abs(azRad) > 1.0:
-                if azRad < 0:
-                    azRad = -1.0
-                else:
-                    azRad = 1.0
-
-            azimuth = 180.0 - degrees(acos(azRad))
-
-            if hourangle > 0.0:
-                azimuth = -azimuth
-        else:
-            if latitude > 0.0:
-                azimuth = 180.0
-            else:
-                azimuth = 0
-
-        if azimuth < 0.0:
-            azimuth += 360.0
-
-        exoatmElevation = 90.0 - zenith
-
-        if exoatmElevation > 85.0:
-            refractionCorrection = 0.0
-        else:
-            te = tan(radians(exoatmElevation))
-            if exoatmElevation > 5.0:
-                refractionCorrection = 58.1 / te - 0.07 / (te * te * te) + 0.000086 / (te * te * te * te * te)
-            elif exoatmElevation > -0.575:
-                step1 = -12.79 + exoatmElevation * 0.711
-                step2 = 103.4 + exoatmElevation * step1
-                step3 = -518.2 + exoatmElevation * step2
-                refractionCorrection = 1735.0 + exoatmElevation * step3
-            else:
-                refractionCorrection = -20.774 / te
-
-            refractionCorrection /= 3600.0
-
-        solarzen = zenith - refractionCorrection
-
-        solarelevation = 90.0 - solarzen
-
-        return solarelevation
-
-    def _proper_angle(self, value):
-        if value > 0.0:
-            value /= 360.0
-            return (value - floor(value)) * 360
-        else:
-            tmp = ceil(abs(value / 360.0))
-            return value + tmp * 360.0
-
     def _julianday(self, date, timezone=None):
         day = date.day
         month = date.month
@@ -455,7 +263,6 @@ class SolarTime(object):
 
     def _obliquity_correction(self, juliancentury):
         e0 = self._mean_obliquity_of_ecliptic(juliancentury)
-
         omega = 125.04 - 1934.136 * juliancentury
         return e0 + 0.00256 * cos(radians(omega))
 
@@ -515,26 +322,6 @@ class SolarTime(object):
 
         sint = sin(radians(e)) * sin(radians(lambd))
         return degrees(asin(sint))
-
-    def _sun_rad_vector(self, juliancentury):
-        v = self._sun_true_anomoly(juliancentury)
-        e = self._eccentrilocation_earth_orbit(juliancentury)
-
-        return (1.000001018 * (1 - e * e)) / (1 + e * cos(radians(v)))
-
-    def _sun_rt_ascension(self, juliancentury):
-        e = self._obliquity_correction(juliancentury)
-        lambd = self._sun_apparent_long(juliancentury)
-
-        tananum = (cos(radians(e)) * sin(radians(lambd)))
-        tanadenom = (cos(radians(lambd)))
-
-        return degrees(atan2(tananum, tanadenom))
-
-    def _sun_true_anomoly(self, juliancentury):
-        m = self._geom_mean_anomaly_sun(juliancentury)
-        c = self._sun_eq_of_center(juliancentury)
-        return m + c
 
     def _hour_angle(self, latitude, solar_dec, solar_depression):
         latRad = radians(latitude)
