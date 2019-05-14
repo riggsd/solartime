@@ -31,10 +31,15 @@ try:
 except ImportError:
     raise ImportError('The solartime module requires the pytz module to be available.')
 
+try:
+    basestring  # Python 2/3 compatibility
+except NameError:
+    basestring = str
+
 
 __all__ = ['SolarTime', 'SolarError']
 
-__version__ = '0.1b0'
+__version__ = '0.1b1'
 __license__ = 'Apache 2.0'
 __author__  = 'Simon Kennedy <code@sffjunkie.co.uk>, David Riggs <driggs@myotisoft.com>'
 
